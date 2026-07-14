@@ -15,6 +15,9 @@ export const drivingTheoryDeck = {
   id: 'uk-car-theory-gb-2026',
   title: 'UK Car Theory — Complete Topic Practice',
   subject: 'Driving theory · Great Britain',
+  category: 'Driving',
+  status: 'Current',
+  features: ['theory', 'hazard', 'generic'],
   description: '120 original questions, including official sign images, across all 14 car-theory topics; reviewed against the Highway Code in July 2026.',
   attribution: 'Contains public sector information licensed under the Open Government Licence v3.0. Not affiliated with or endorsed by DVSA.',
   topics: [

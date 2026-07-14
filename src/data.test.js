@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import App from './App.jsx'
 import { flattenDeck, normalizeDeck } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
+import { aLevelDecks, bmatDeck, builtInCourseDecks, ucatDeck } from './courseCatalog.js'
 import { generateTheoryTest, getExamOptions, THEORY_PASS_MARK, THEORY_QUESTION_COUNT, THEORY_SECONDS } from './examData.js'
 import { generateHazardTest, HAZARD_MAX_SCORE, HAZARD_PASS_MARK, looksLikePatternClicking, scoreClip } from './hazardClips.js'
 
@@ -14,6 +15,20 @@ describe('application', () => {
     const deck = normalizeDeck(drivingTheoryDeck), items = flattenDeck(deck)
     expect(deck.topics).toHaveLength(14); expect(items).toHaveLength(120); expect(items.filter((item) => item.image)).toHaveLength(8)
     expect(items.every((item) => item.question && item.source)).toBe(true)
+  })
+})
+
+describe('course catalogue', () => {
+  it('ships UCAT, an archived BMAT course, and separate A-level courses', () => {
+    expect(ucatDeck.topics).toHaveLength(4)
+    expect(bmatDeck.status).toMatch(/Archived/)
+    expect(aLevelDecks.length).toBeGreaterThanOrEqual(50)
+    expect(aLevelDecks.map((deck) => deck.title)).toEqual(expect.arrayContaining(['A-level Biology', 'A-level Mathematics', 'A-level French', 'A-level Psychology']))
+  })
+  it('gives every built-in course a unique id and usable content', () => {
+    const normalised = builtInCourseDecks.map(normalizeDeck)
+    expect(new Set(normalised.map((deck) => deck.id)).size).toBe(normalised.length)
+    expect(normalised.every((deck) => deck.topics.length && flattenDeck(deck).length)).toBe(true)
   })
 })
 

@@ -23,6 +23,16 @@ The second part is a functioning hazard-perception practice test:
 
 The live DVSA question bank and hazard clips are not published. This repository does not copy or claim to contain that licensed material. Questions are original and based on the Highway Code and GOV.UK guidance. Traffic-sign artwork is Crown copyright and reproduced under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Hazard footage is openly licensed and attributed to its creator through Wikimedia Commons. StudyPro is not affiliated with or endorsed by DVSA.
 
+## Built-in course catalogue
+
+The course library also includes:
+
+- a current-format UCAT starter course covering Verbal Reasoning, Decision Making, Quantitative Reasoning and Situational Judgement, checked against the [UCAT Consortium format](https://www.ucat.ac.uk/about-ucat/test-format-and-scoring/);
+- a clearly labelled archived BMAT course for legacy skills practice—the [University of Cambridge moved its medical admissions to UCAT from 2024](https://www.cam.ac.uk/news/new-admissions-tests-for-2024);
+- 57 separate A-level subject and language courses containing 390 common-core topic-map cards for England, based on the [Department for Education subject-content collection](https://www.gov.uk/government/collections/gce-as-and-a-level-subject-content).
+
+Use the library search and course-type filter to move between Driving, Admissions tests and A levels. The A-level maps follow Department for Education common subject content, but exam boards add specification-specific detail and optional routes. They are coverage checklists rather than a substitute for the specification issued by a learner’s exam board.
+
 ## Privacy and accessibility
 
 There are no accounts, logins, profiles, analytics, adverts, API keys, or backend services. Imported sets and progress stay in `localStorage` on the current device. Clearing the site's browser data removes them.
@@ -86,10 +96,11 @@ JSX is compiled by Vite during the build; GitHub Pages receives ordinary HTML, C
 - `src/App.jsx` — library, imports, study modes, and local progress
 - `src/ExamSession.jsx` / `src/examData.js` — generated multiple-choice tests
 - `src/HazardSession.jsx` / `src/hazardClips.js` — hazard playback, scoring, and media manifest
-- `src/drivingTheory.js` — original built-in questions
+- `src/drivingTheory.js` — original built-in driving questions
+- `src/courseCatalog.js` — UCAT, archived BMAT and A-level course catalogue
 - `src/data.js` — JSON validation and normalisation
 - `src/data.test.js` — content and test integrity checks
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code or content. Security reports are covered by [SECURITY.md](SECURITY.md). Code is released under the [MIT License](LICENSE); content retains its stated licence.
 
-UCAT and archived BMAT content are planned as separate courses after the driving library is expanded. See the [course roadmap](docs/ROADMAP.md).
+See the [course roadmap](docs/ROADMAP.md) for the next content-depth milestones.

@@ -8,8 +8,12 @@ The current built-in course provides an original 120-question starter bank, traf
 
 ## 2. UCAT
 
-Add UCAT as a separate course with its current subtests, timed configuration, worked solutions, and original or appropriately licensed question banks. Check the official format immediately before implementation because test structure and timing can change.
+The separate starter course covers all four current subtests with original questions. The next milestone is a dedicated timed UCAT simulator, worked item sets, calculator and flagging tools. Check the official format before every release because structure and timing can change.
 
 ## 3. BMAT archive
 
-BMAT is no longer an active admissions test. If added, it should be a clearly labelled archived course for legacy practice rather than presented as a current examination. Any successor admissions-test material should be a separate current course.
+BMAT is no longer an active admissions test. The separate archive course provides legacy skills practice and must never be presented as a current examination. Any successor admissions-test material should be a separate current course.
+
+## 4. A levels
+
+The catalogue contains separate common-core topic maps for 57 subjects and languages. The next milestone is contributor-reviewed knowledge and question packs organised by subject, exam board and specification version. Topic maps should stay clearly distinguished from specification-complete question banks.

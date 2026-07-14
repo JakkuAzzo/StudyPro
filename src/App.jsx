@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { deckTemplate, flattenDeck, normalizeDeck, shuffle } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
+import { builtInCourseDecks } from './courseCatalog.js'
 import ExamSession from './ExamSession.jsx'
 import HazardSession from './HazardSession.jsx'
 
@@ -22,15 +23,21 @@ const modes = [
 ]
 
 const starterDeck = normalizeDeck(drivingTheoryDeck)
+const builtInDecks = [starterDeck, ...builtInCourseDecks.map(normalizeDeck)]
+const builtInIds = new Set(builtInDecks.map((deck) => deck.id))
 const allDrivingQuestions = flattenDeck(starterDeck)
 
 function loadDecks() {
   try {
     const saved = JSON.parse(localStorage.getItem('studypro:decks'))
-    if (!Array.isArray(saved) || !saved.length) return [starterDeck]
-    return [starterDeck, ...saved.filter((deck) => deck.id !== starterDeck.id)]
+    if (!Array.isArray(saved) || !saved.length) return builtInDecks
+    const imported = saved.filter((deck) => !builtInIds.has(deck.id)).flatMap((deck) => {
+      try { return [normalizeDeck({ ...deck, features: deck.features?.length ? deck.features : ['generic'] })] }
+      catch { return [] }
+    })
+    return [...builtInDecks, ...imported]
   } catch {
-    return [starterDeck]
+    return builtInDecks
   }
 }
 
@@ -146,6 +153,7 @@ function ModeCard({ mode, onStart, disabled }) {
 
 function HomePage({ deck, topic, setTopic, onStart, stats, onImport }) {
   const items = flattenDeck(deck, topic)
+  const availableModes = modes.filter((mode) => deck.features.includes(mode.id) || (!['theory', 'hazard'].includes(mode.id) && deck.features.includes('generic')))
   return (
     <main className="page-content">
       <section className="hero-row">
@@ -164,23 +172,28 @@ function HomePage({ deck, topic, setTopic, onStart, stats, onImport }) {
         <StatCard icon={Clock3} label="Time studied" value={`${stats.minutes} min`} detail="Across all sessions" color="blue" />
       </section>
       <section className="section-heading"><div><span className="eyebrow">PRACTICE YOUR WAY</span><h2>Choose a study mode</h2></div><span className="resource-count">{items.length} {items.length === 1 ? 'prompt' : 'prompts'} ready</span></section>
-      <section className="mode-grid">{modes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!['theory', 'hazard'].includes(mode.id) && !items.length} />)}</section>
-      <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution && <>{deck.attribution} </>}The live DVSA question bank and hazard clips are not reproduced.</footer>
+      <section className="mode-grid">{availableModes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!['theory', 'hazard'].includes(mode.id) && !items.length} />)}</section>
+      <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution}</footer>
     </main>
   )
 }
 
 function LibraryPage({ decks, activeId, onSelect, onImport }) {
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('All courses')
+  const categories = ['All courses', ...new Set(decks.map((deck) => deck.category))]
+  const visibleDecks = decks.filter((deck) => (category === 'All courses' || deck.category === category) && `${deck.title} ${deck.subject} ${deck.description}`.toLowerCase().includes(query.toLowerCase()))
   return (
     <main className="page-content">
       <section className="simple-heading"><div><span className="eyebrow">YOUR CONTENT</span><h1>Study library</h1><p>Every set is ready to become a focused practice session.</p></div><button className="button button-primary" onClick={onImport}><Plus size={18} /> Import set</button></section>
-      <div className="search-box"><Search size={18} /><input aria-label="Search library" placeholder="Search your sets" /></div>
+      <div className="library-tools"><div className="search-box"><Search size={18} /><input aria-label="Search courses" placeholder="Search courses" value={query} onChange={(event) => setQuery(event.target.value)} /></div><label className="library-filter"><span className="sr-only">Filter by course type</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label></div>
       <section className="library-grid">
-        {decks.map((deck, index) => {
+        {visibleDecks.map((deck, index) => {
           const count = flattenDeck(deck).length
-          return <button key={deck.id} className={`library-card ${activeId === deck.id ? 'selected' : ''}`} onClick={() => onSelect(deck.id)}><div className={`library-cover cover-${index % 4}`}><BookOpen size={28} /></div><span className="deck-subject">{deck.subject}</span><h3>{deck.title}</h3><p>{deck.description}</p><div><span>{deck.topics.length} topics</span><span>{count} cards</span></div></button>
+          return <button key={deck.id} className={`library-card ${activeId === deck.id ? 'selected' : ''}`} onClick={() => onSelect(deck.id)}><div className={`library-cover cover-${index % 4}`}><BookOpen size={28} /></div><div className="library-labels"><span className="deck-subject">{deck.category}</span>{deck.status && <span className={`course-status ${deck.status.startsWith('Archived') ? 'archived' : ''}`}>{deck.status}</span>}</div><h3>{deck.title}</h3><p>{deck.description}</p><div><span>{deck.topics.length} topics</span><span>{count} cards</span></div></button>
         })}
       </section>
+      {!visibleDecks.length && <div className="empty-library"><Search size={24} /><h2>No matching courses</h2><p>Try a subject name such as Biology, UCAT or French.</p></div>}
     </main>
   )
 }
