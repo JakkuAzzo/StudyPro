@@ -108,6 +108,7 @@ export function normalizeDeck(input) {
     subject: text(source.subject, text(source.category, 'Study set')),
     description: text(source.description, 'Imported study material'),
     attribution: text(source.attribution),
+    referenceUrl: text(source.referenceUrl),
     category: text(source.category, 'Imported'),
     status: text(source.status),
     features: Array.isArray(source.features) ? source.features.map((value) => text(value)).filter(Boolean) : ['generic'],

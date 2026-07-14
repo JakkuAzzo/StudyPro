@@ -3,6 +3,7 @@ import App from './App.jsx'
 import { flattenDeck, normalizeDeck } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
 import { aLevelDecks, bmatDeck, builtInCourseDecks, ucatDeck } from './courseCatalog.js'
+import { examBoardDecks } from './examBoardDecks.js'
 import { generateTheoryTest, getExamOptions, THEORY_PASS_MARK, THEORY_QUESTION_COUNT, THEORY_SECONDS } from './examData.js'
 import { generateHazardTest, HAZARD_MAX_SCORE, HAZARD_PASS_MARK, looksLikePatternClicking, scoreClip } from './hazardClips.js'
 
@@ -29,6 +30,12 @@ describe('course catalogue', () => {
     const normalised = builtInCourseDecks.map(normalizeDeck)
     expect(new Set(normalised.map((deck) => deck.id)).size).toBe(normalised.length)
     expect(normalised.every((deck) => deck.topics.length && flattenDeck(deck).length)).toBe(true)
+  })
+  it('adds sourced AQA, OCR and Pearson Edexcel specification packs', () => {
+    expect(examBoardDecks).toHaveLength(15)
+    expect(new Set(examBoardDecks.map((deck) => deck.status.split(' ')[0]))).toEqual(new Set(['AQA', 'OCR', 'Pearson']))
+    expect(examBoardDecks.every((deck) => deck.referenceUrl.startsWith('https://') && deck.topics.length)).toBe(true)
+    expect(examBoardDecks.map((deck) => deck.id)).toEqual(expect.arrayContaining(['a-level-biology-aqa-7402', 'a-level-mathematics-pearson-edexcel-9ma0']))
   })
 })
 

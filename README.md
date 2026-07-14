@@ -29,9 +29,10 @@ The course library also includes:
 
 - a current-format UCAT starter course covering Verbal Reasoning, Decision Making, Quantitative Reasoning and Situational Judgement, checked against the [UCAT Consortium format](https://www.ucat.ac.uk/about-ucat/test-format-and-scoring/);
 - a clearly labelled archived BMAT course for legacy skills practice—the [University of Cambridge moved its medical admissions to UCAT from 2024](https://www.cam.ac.uk/news/new-admissions-tests-for-2024);
-- 57 separate A-level subject and language courses containing 390 common-core topic-map cards for England, based on the [Department for Education subject-content collection](https://www.gov.uk/government/collections/gce-as-and-a-level-subject-content).
+- 57 separate A-level subject and language courses containing 390 common-core topic-map cards for England, based on the [Department for Education subject-content collection](https://www.gov.uk/government/collections/gce-as-and-a-level-subject-content);
+- 15 sourced specification packs for AQA, OCR and Pearson Edexcel Biology, Chemistry, Physics, Mathematics and Psychology, adding 184 board-organised sections.
 
-Use the library search and course-type filter to move between Driving, Admissions tests and A levels. The A-level maps follow Department for Education common subject content, but exam boards add specification-specific detail and optional routes. They are coverage checklists rather than a substitute for the specification issued by a learner’s exam board.
+Use **Browse courses**, its search box and course-type filter to move between Driving, Admissions tests, common-core A levels and specification packs. Every sourced pack links back to the official awarding-body specification. These are coverage checklists rather than copies of proprietary exam questions.
 
 ## Privacy and accessibility
 
@@ -98,6 +99,7 @@ JSX is compiled by Vite during the build; GitHub Pages receives ordinary HTML, C
 - `src/HazardSession.jsx` / `src/hazardClips.js` — hazard playback, scoring, and media manifest
 - `src/drivingTheory.js` — original built-in driving questions
 - `src/courseCatalog.js` — UCAT, archived BMAT and A-level course catalogue
+- `src/examBoardDecks.js` — sourced AQA, OCR and Pearson Edexcel specification maps
 - `src/data.js` — JSON validation and normalisation
 - `src/data.test.js` — content and test integrity checks
 

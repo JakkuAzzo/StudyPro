@@ -16,4 +16,4 @@ BMAT is no longer an active admissions test. The separate archive course provide
 
 ## 4. A levels
 
-The catalogue contains separate common-core topic maps for 57 subjects and languages. The next milestone is contributor-reviewed knowledge and question packs organised by subject, exam board and specification version. Topic maps should stay clearly distinguished from specification-complete question banks.
+The catalogue contains separate common-core topic maps for 57 subjects and languages. The first board-specific release adds AQA, OCR and Pearson Edexcel maps for Biology, Chemistry, Physics, Mathematics and Psychology. The next milestone is contributor-reviewed knowledge and original question packs within those specifications, followed by verified board maps for the remaining subjects. Topic maps must stay clearly distinguished from specification-complete question banks.

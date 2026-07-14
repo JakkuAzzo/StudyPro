@@ -61,7 +61,7 @@ function Header({ onImport, onMenu }) {
 function Sidebar({ open, onClose, active, setActive, onImport }) {
   const nav = [
     { id: 'home', label: 'Study home', icon: Home },
-    { id: 'library', label: 'My library', icon: BookOpen },
+    { id: 'library', label: 'Browse courses', icon: BookOpen },
     { id: 'progress', label: 'Progress', icon: Gauge },
   ]
   return (
@@ -151,14 +151,14 @@ function ModeCard({ mode, onStart, disabled }) {
   )
 }
 
-function HomePage({ deck, topic, setTopic, onStart, stats, onImport }) {
+function HomePage({ deck, topic, setTopic, onStart, stats, onImport, onBrowse }) {
   const items = flattenDeck(deck, topic)
   const availableModes = modes.filter((mode) => deck.features.includes(mode.id) || (!['theory', 'hazard'].includes(mode.id) && deck.features.includes('generic')))
   return (
     <main className="page-content">
       <section className="hero-row">
         <div><span className="eyebrow">YOUR STUDY SPACE</span><h1>Make it <em>stick.</em></h1><p>Turn your notes into active practice, then learn exactly where to focus next.</p></div>
-        <button className="button button-primary mobile-import" onClick={onImport}><Plus size={18} /> New study set</button>
+        <div className="hero-actions"><button className="button button-secondary" onClick={onBrowse}><BookOpen size={17} /> Browse courses</button><button className="button button-primary mobile-import" onClick={onImport}><Plus size={18} /> New study set</button></div>
       </section>
       <section className="deck-banner">
         <div className="deck-visual"><Brain size={34} /><span className="orbit one" /><span className="orbit two" /></div>
@@ -173,7 +173,7 @@ function HomePage({ deck, topic, setTopic, onStart, stats, onImport }) {
       </section>
       <section className="section-heading"><div><span className="eyebrow">PRACTICE YOUR WAY</span><h2>Choose a study mode</h2></div><span className="resource-count">{items.length} {items.length === 1 ? 'prompt' : 'prompts'} ready</span></section>
       <section className="mode-grid">{availableModes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!['theory', 'hazard'].includes(mode.id) && !items.length} />)}</section>
-      <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution}</footer>
+      <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution} {deck.referenceUrl && <a href={deck.referenceUrl} target="_blank" rel="noreferrer">Open official specification</a>}</footer>
     </main>
   )
 }
@@ -182,11 +182,12 @@ function LibraryPage({ decks, activeId, onSelect, onImport }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All courses')
   const categories = ['All courses', ...new Set(decks.map((deck) => deck.category))]
-  const visibleDecks = decks.filter((deck) => (category === 'All courses' || deck.category === category) && `${deck.title} ${deck.subject} ${deck.description}`.toLowerCase().includes(query.toLowerCase()))
+  const visibleDecks = decks.filter((deck) => (category === 'All courses' || deck.category === category) && `${deck.title} ${deck.subject} ${deck.description} ${deck.status} ${deck.category}`.toLowerCase().includes(query.toLowerCase()))
   return (
     <main className="page-content">
-      <section className="simple-heading"><div><span className="eyebrow">YOUR CONTENT</span><h1>Study library</h1><p>Every set is ready to become a focused practice session.</p></div><button className="button button-primary" onClick={onImport}><Plus size={18} /> Import set</button></section>
+      <section className="simple-heading"><div><span className="eyebrow">COURSE CATALOGUE</span><h1>Browse courses</h1><p>Choose driving theory, admissions tests, common-core A levels or an exam-board specification pack.</p></div><button className="button button-primary" onClick={onImport}><Plus size={18} /> Import set</button></section>
       <div className="library-tools"><div className="search-box"><Search size={18} /><input aria-label="Search courses" placeholder="Search courses" value={query} onChange={(event) => setQuery(event.target.value)} /></div><label className="library-filter"><span className="sr-only">Filter by course type</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label></div>
+      <p className="catalogue-count">Showing {visibleDecks.length} of {decks.length} courses</p>
       <section className="library-grid">
         {visibleDecks.map((deck, index) => {
           const count = flattenDeck(deck).length
@@ -337,7 +338,7 @@ export default function App() {
   const deckItems = flattenDeck(deck, topic)
   const computedStats = { ...stats, mastery: stats.answers ? Math.round((stats.correct / stats.answers) * 100) : 0, minutes: Math.round(stats.seconds / 60) }
 
-  useEffect(() => { localStorage.setItem('studypro:decks', JSON.stringify(decks)) }, [decks])
+  useEffect(() => { localStorage.setItem('studypro:decks', JSON.stringify(decks.filter((item) => !builtInIds.has(item.id)))) }, [decks])
   useEffect(() => { localStorage.setItem('studypro:active', deck.id) }, [deck.id])
   useEffect(() => { localStorage.setItem('studypro:stats', JSON.stringify(stats)) }, [stats])
 
@@ -364,7 +365,7 @@ export default function App() {
       <Header onImport={() => setImportOpen(true)} onMenu={() => setMenuOpen(true)} />
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={page} setActive={setPage} onImport={() => { setImportOpen(true); setMenuOpen(false) }} />
       <div className="content-shell">
-        {page === 'home' && <HomePage deck={deck} topic={topic} setTopic={setTopic} onStart={setSession} stats={computedStats} onImport={() => setImportOpen(true)} />}
+        {page === 'home' && <HomePage deck={deck} topic={topic} setTopic={setTopic} onStart={setSession} stats={computedStats} onImport={() => setImportOpen(true)} onBrowse={() => setPage('library')} />}
         {page === 'library' && <LibraryPage decks={decks} activeId={deck.id} onSelect={(id) => { setActiveId(id); setTopic('All topics'); setPage('home') }} onImport={() => setImportOpen(true)} />}
         {page === 'progress' && <ProgressPage stats={computedStats} />}
       </div>

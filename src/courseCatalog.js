@@ -1,3 +1,5 @@
+import { examBoardDecks } from './examBoardDecks.js'
+
 const source = 'Department for Education GCE AS and A level subject content (England)'
 
 const topicCard = (subject, title) => ({
@@ -139,4 +141,4 @@ export const aLevelDecks = [
   ...ancientLanguages,
 ]
 
-export const builtInCourseDecks = [ucatDeck, bmatDeck, ...aLevelDecks]
+export const builtInCourseDecks = [ucatDeck, bmatDeck, ...aLevelDecks, ...examBoardDecks]
