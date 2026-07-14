@@ -2,6 +2,15 @@ import { examBoardDecks } from './examBoardDecks.js'
 
 const source = 'Department for Education GCE AS and A level subject content (England)'
 
+const courseCover = (title) => {
+  if (/Biology|Chemistry|Physics|Environmental|Geology/.test(title)) return './assets/covers/sciences.webp'
+  if (/Mathematics|Statistics|Computer|Electronics/.test(title)) return './assets/covers/maths-computing.webp'
+  if (/English|Language|French|German|Spanish|Arabic|Bengali|Chinese|Greek|Gujarati|Italian|Japanese|Hebrew|Latin|Panjabi|Persian|Polish|Portuguese|Russian|Turkish|Urdu/.test(title)) return './assets/covers/languages-literature.webp'
+  if (/Art|Dance|Drama|Film|Media|Music|Design/.test(title)) return './assets/covers/creative-arts.webp'
+  if (/Accounting|Business|Economics|Law|Politics/.test(title)) return './assets/covers/business-law.webp'
+  return './assets/covers/humanities-social.webp'
+}
+
 const topicCard = (subject, title) => ({
   key: title,
   question: `What should you be able to do with ${title.toLowerCase()} in A-level ${subject}?`,
@@ -16,6 +25,10 @@ const outline = (id, title, topics, options = {}) => ({
   subject: `A level · ${title}`,
   category: 'A levels',
   status: 'Topic map',
+  courseSubject: title,
+  board: 'Common core',
+  cover: courseCover(title),
+  coverAlt: `Editorial study illustration for A-level ${title}`,
   description: `${topics.length}-topic common-core map for England. Add your exam-board detail through JSON imports.`,
   attribution: 'Topic structure derived from Department for Education subject content under the Open Government Licence v3.0.',
   features: ['generic'],
@@ -38,6 +51,9 @@ export const ucatDeck = {
   subject: 'Medical admissions · UCAT',
   category: 'Admissions tests',
   status: 'Current',
+  courseSubject: 'UCAT',
+  cover: './assets/covers/medical-admissions.webp',
+  coverAlt: 'Medical books, reasoning cards and a stethoscope on a study desk',
   description: 'Original starter questions across all four current UCAT subtests, with the official timing structure documented.',
   attribution: 'Original practice content. Format checked against the UCAT Consortium in July 2026; not affiliated with the UCAT Consortium.',
   features: ['generic'],
@@ -71,6 +87,9 @@ export const bmatDeck = {
   subject: 'Medical admissions · Archived BMAT',
   category: 'Admissions tests',
   status: 'Archived · ended 2023',
+  courseSubject: 'BMAT archive',
+  cover: './assets/covers/medical-admissions.webp',
+  coverAlt: 'Medical books, reasoning cards and a stethoscope on a study desk',
   description: 'Legacy practice for the discontinued BMAT structure. This is not preparation for a current admissions test.',
   attribution: 'Original retrospective practice content. BMAT was last administered in 2023.',
   features: ['generic'],

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import App from './App.jsx'
 import { flattenDeck, normalizeDeck } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
 import { aLevelDecks, bmatDeck, builtInCourseDecks, ucatDeck } from './courseCatalog.js'
 import { examBoardDecks } from './examBoardDecks.js'
+import { filterAndSortCourses } from './courseFilters.js'
 import { generateTheoryTest, getExamOptions, THEORY_PASS_MARK, THEORY_QUESTION_COUNT, THEORY_SECONDS } from './examData.js'
 import { generateHazardTest, HAZARD_MAX_SCORE, HAZARD_PASS_MARK, looksLikePatternClicking, scoreClip } from './hazardClips.js'
 
@@ -27,15 +30,25 @@ describe('course catalogue', () => {
     expect(aLevelDecks.map((deck) => deck.title)).toEqual(expect.arrayContaining(['A-level Biology', 'A-level Mathematics', 'A-level French', 'A-level Psychology']))
   })
   it('gives every built-in course a unique id and usable content', () => {
-    const normalised = builtInCourseDecks.map(normalizeDeck)
+    const normalised = [drivingTheoryDeck, ...builtInCourseDecks].map(normalizeDeck)
     expect(new Set(normalised.map((deck) => deck.id)).size).toBe(normalised.length)
     expect(normalised.every((deck) => deck.topics.length && flattenDeck(deck).length)).toBe(true)
+    expect(normalised.every((deck) => deck.courseSubject && deck.cover && deck.coverAlt)).toBe(true)
+    expect([...new Set(normalised.map((deck) => deck.cover))].every((cover) => existsSync(resolve('public', cover.replace(/^\.\//, ''))))).toBe(true)
   })
   it('adds sourced AQA, OCR and Pearson Edexcel specification packs', () => {
     expect(examBoardDecks).toHaveLength(15)
     expect(new Set(examBoardDecks.map((deck) => deck.status.split(' ')[0]))).toEqual(new Set(['AQA', 'OCR', 'Pearson']))
     expect(examBoardDecks.every((deck) => deck.referenceUrl.startsWith('https://') && deck.topics.length)).toBe(true)
     expect(examBoardDecks.map((deck) => deck.id)).toEqual(expect.arrayContaining(['a-level-biology-aqa-7402', 'a-level-mathematics-pearson-edexcel-9ma0']))
+  })
+  it('filters by subject and board, searches topic names, and sorts results', () => {
+    const normalised = builtInCourseDecks.map(normalizeDeck)
+    const boardResults = filterAndSortCourses(normalised, { subject: 'Biology', board: 'AQA' })
+    expect(boardResults.map((deck) => deck.id)).toEqual(['a-level-biology-aqa-7402'])
+    expect(filterAndSortCourses(normalised, { query: 'biological molecules' }).some((deck) => deck.title.includes('Biology'))).toBe(true)
+    const alphabetical = filterAndSortCourses(normalised, { category: 'Admissions tests', sort: 'A–Z' })
+    expect(alphabetical.map((deck) => deck.title)).toEqual([...alphabetical.map((deck) => deck.title)].sort((a, b) => a.localeCompare(b)))
   })
 })
 

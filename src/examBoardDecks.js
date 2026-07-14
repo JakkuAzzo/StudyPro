@@ -1,5 +1,7 @@
 const slug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+const packCover = (subject) => subject === 'Mathematics' ? './assets/covers/maths-computing.webp' : subject === 'Psychology' ? './assets/covers/humanities-social.webp' : './assets/covers/sciences.webp'
+
 const topicItem = (subject, board, title, sourceUrl) => ({
   key: title,
   question: `What does ${board} expect you to revise within ${title.toLowerCase()}?`,
@@ -14,6 +16,10 @@ const pack = ({ subject, board, code, sourceUrl, topics, note = '' }) => ({
   subject: `A level · ${subject} · ${board}`,
   category: 'A levels',
   status: `${board} ${code}`,
+  courseSubject: subject,
+  board: board.startsWith('Pearson') ? 'Pearson Edexcel' : board.startsWith('OCR') ? 'OCR' : board,
+  cover: packCover(subject),
+  coverAlt: `Editorial study illustration for A-level ${subject}`,
   description: `${topics.length}-section specification map for ${board} ${code}.${note ? ` ${note}` : ''}`,
   attribution: `Specification structure: ${board}. Official source: ${sourceUrl}`,
   referenceUrl: sourceUrl,

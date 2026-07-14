@@ -8,6 +8,7 @@ import {
 import { deckTemplate, flattenDeck, normalizeDeck, shuffle } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
 import { builtInCourseDecks } from './courseCatalog.js'
+import { filterAndSortCourses } from './courseFilters.js'
 import ExamSession from './ExamSession.jsx'
 import HazardSession from './HazardSession.jsx'
 
@@ -181,17 +182,36 @@ function HomePage({ deck, topic, setTopic, onStart, stats, onImport, onBrowse })
 function LibraryPage({ decks, activeId, onSelect, onImport }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All courses')
-  const categories = ['All courses', ...new Set(decks.map((deck) => deck.category))]
-  const visibleDecks = decks.filter((deck) => (category === 'All courses' || deck.category === category) && `${deck.title} ${deck.subject} ${deck.description} ${deck.status} ${deck.category}`.toLowerCase().includes(query.toLowerCase()))
+  const [subject, setSubject] = useState('All subjects')
+  const [board, setBoard] = useState('All boards')
+  const [sort, setSort] = useState('Recommended')
+  const categories = ['All courses', ...new Set(decks.map((deck) => deck.category).filter(Boolean))]
+  const subjects = ['All subjects', ...new Set(decks.map((deck) => deck.courseSubject).filter(Boolean).sort((a, b) => a.localeCompare(b)))]
+  const boards = ['All boards', ...new Set(decks.map((deck) => deck.board).filter(Boolean).sort((a, b) => a.localeCompare(b)))]
+  const visibleDecks = filterAndSortCourses(decks, { query, category, subject, board, sort })
+  const hasFilters = query || category !== 'All courses' || subject !== 'All subjects' || board !== 'All boards' || sort !== 'Recommended'
+
+  function clearFilters() {
+    setQuery(''); setCategory('All courses'); setSubject('All subjects'); setBoard('All boards'); setSort('Recommended')
+  }
+
   return (
     <main className="page-content">
       <section className="simple-heading"><div><span className="eyebrow">COURSE CATALOGUE</span><h1>Browse courses</h1><p>Choose driving theory, admissions tests, common-core A levels or an exam-board specification pack.</p></div><button className="button button-primary" onClick={onImport}><Plus size={18} /> Import set</button></section>
-      <div className="library-tools"><div className="search-box"><Search size={18} /><input aria-label="Search courses" placeholder="Search courses" value={query} onChange={(event) => setQuery(event.target.value)} /></div><label className="library-filter"><span className="sr-only">Filter by course type</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label></div>
-      <p className="catalogue-count">Showing {visibleDecks.length} of {decks.length} courses</p>
+      <div className="library-tools">
+        <div className="search-box"><Search size={18} /><input aria-label="Search courses and topics" placeholder="Search courses or topics" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
+        <div className="filter-grid">
+          <label className="library-filter"><span className="sr-only">Filter by course type</span><select aria-label="Course type" value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label>
+          <label className="library-filter"><span className="sr-only">Filter by subject</span><select aria-label="Subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label>
+          <label className="library-filter"><span className="sr-only">Filter by exam board</span><select aria-label="Exam board" value={board} onChange={(event) => setBoard(event.target.value)}>{boards.map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label>
+          <label className="library-filter"><span className="sr-only">Sort courses</span><select aria-label="Sort courses" value={sort} onChange={(event) => setSort(event.target.value)}>{['Recommended', 'A–Z', 'Z–A', 'Most topics'].map((name) => <option key={name}>{name}</option>)}</select><ChevronDown size={16} /></label>
+        </div>
+      </div>
+      <div className="catalogue-summary"><p className="catalogue-count" aria-live="polite">Showing {visibleDecks.length} of {decks.length} courses</p>{hasFilters && <button className="clear-filters" onClick={clearFilters}><X size={14} /> Clear filters</button>}</div>
       <section className="library-grid">
-        {visibleDecks.map((deck, index) => {
+        {visibleDecks.map((deck) => {
           const count = flattenDeck(deck).length
-          return <button key={deck.id} className={`library-card ${activeId === deck.id ? 'selected' : ''}`} onClick={() => onSelect(deck.id)}><div className={`library-cover cover-${index % 4}`}><BookOpen size={28} /></div><div className="library-labels"><span className="deck-subject">{deck.category}</span>{deck.status && <span className={`course-status ${deck.status.startsWith('Archived') ? 'archived' : ''}`}>{deck.status}</span>}</div><h3>{deck.title}</h3><p>{deck.description}</p><div><span>{deck.topics.length} topics</span><span>{count} cards</span></div></button>
+          return <button key={deck.id} className={`library-card ${activeId === deck.id ? 'selected' : ''}`} onClick={() => onSelect(deck.id)}><div className="library-cover"><img src={deck.cover} alt={deck.coverAlt} loading="lazy" /></div><div className="library-labels"><span className="deck-subject">{deck.category}</span>{deck.status && <span className={`course-status ${deck.status.startsWith('Archived') ? 'archived' : ''}`}>{deck.status}</span>}</div><h3>{deck.title}</h3><p>{deck.description}</p><div><span>{deck.topics.length} topics</span><span>{count} cards</span></div></button>
         })}
       </section>
       {!visibleDecks.length && <div className="empty-library"><Search size={24} /><h2>No matching courses</h2><p>Try a subject name such as Biology, UCAT or French.</p></div>}

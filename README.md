@@ -32,7 +32,7 @@ The course library also includes:
 - 57 separate A-level subject and language courses containing 390 common-core topic-map cards for England, based on the [Department for Education subject-content collection](https://www.gov.uk/government/collections/gce-as-and-a-level-subject-content);
 - 15 sourced specification packs for AQA, OCR and Pearson Edexcel Biology, Chemistry, Physics, Mathematics and Psychology, adding 184 board-organised sections.
 
-Use **Browse courses**, its search box and course-type filter to move between Driving, Admissions tests, common-core A levels and specification packs. Every sourced pack links back to the official awarding-body specification. These are coverage checklists rather than copies of proprietary exam questions.
+Use **Browse courses** to search course names and topic titles, filter by course type, subject or exam board, and sort alphabetically or by topic count. Every course has a responsive editorial cover image, and every sourced pack links back to the official awarding-body specification. These are coverage checklists rather than copies of proprietary exam questions.
 
 ## Privacy and accessibility
 
@@ -57,6 +57,10 @@ The interface uses semantic form controls, visible keyboard focus, text labels f
 {
   "title": "Biology essentials",
   "subject": "Biology",
+  "courseSubject": "Biology",
+  "board": "AQA",
+  "cover": "https://example.org/biology-cover.webp",
+  "coverAlt": "Microscope and biology notes on a desk",
   "topics": [{
     "title": "Cell biology",
     "items": [{
@@ -69,6 +73,8 @@ The interface uses semantic form controls, visible keyboard focus, text labels f
 ```
 
 Simple arrays also work. `term`/`answer`, `question`/`answer`, and `key`/`definition` are recognised automatically. See [the content and media guide](docs/CONTENT-GUIDE.md).
+
+The optional `courseSubject`, `board`, `cover`, and `coverAlt` fields improve catalogue filtering and presentation. Imported courses without a cover use the built-in generic study artwork.
 
 ## Development
 
@@ -100,7 +106,9 @@ JSX is compiled by Vite during the build; GitHub Pages receives ordinary HTML, C
 - `src/drivingTheory.js` — original built-in driving questions
 - `src/courseCatalog.js` — UCAT, archived BMAT and A-level course catalogue
 - `src/examBoardDecks.js` — sourced AQA, OCR and Pearson Edexcel specification maps
+- `src/courseFilters.js` — catalogue search, filters and sorting
 - `src/data.js` — JSON validation and normalisation
+- `public/assets/covers/` — compressed built-in course artwork
 - `src/data.test.js` — content and test integrity checks
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code or content. Security reports are covered by [SECURITY.md](SECURITY.md). Code is released under the [MIT License](LICENSE); content retains its stated licence.

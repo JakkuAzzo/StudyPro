@@ -111,6 +111,10 @@ export function normalizeDeck(input) {
     referenceUrl: text(source.referenceUrl),
     category: text(source.category, 'Imported'),
     status: text(source.status),
+    courseSubject: text(source.courseSubject, text(source.subject, text(source.title, 'Imported course'))),
+    board: text(source.board),
+    cover: text(source.cover, text(source.image, './assets/covers/humanities-social.webp')),
+    coverAlt: text(source.coverAlt, `${text(source.title, 'Course')} course cover`),
     features: Array.isArray(source.features) ? source.features.map((value) => text(value)).filter(Boolean) : ['generic'],
     topics,
   }
