@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, Check, CheckCircle2, ChevronDown, Clock3,
-  Code2, Download, FileJson, Flame, Gauge, Grid2X2, HelpCircle, Home, Import,
+  Code2, Download, Eye, FileJson, Flame, Gauge, Grid2X2, HelpCircle, Home, Import,
   Layers3, Lightbulb, Link2, Menu, MoreHorizontal, Play, Plus, RotateCcw, Search,
-  Settings, Sparkles, Target, TimerReset, Trophy, Upload, X, Zap,
+  Sparkles, Target, TimerReset, Trophy, Upload, X, Zap,
 } from 'lucide-react'
 import { deckTemplate, flattenDeck, normalizeDeck, shuffle } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
+import ExamSession from './ExamSession.jsx'
+import HazardSession from './HazardSession.jsx'
 
 const modes = [
-  { id: 'mock', name: 'Mock theory test', description: '50 questions with the official 57-minute limit.', icon: TimerReset, color: 'red', meta: 'Exam simulation' },
+  { id: 'theory', name: 'Multiple-choice test', description: 'A fresh 50-question test with 57 minutes, flagging, review, and a 43/50 pass mark.', icon: TimerReset, color: 'red', meta: 'Part one' },
+  { id: 'hazard', name: 'Hazard perception', description: 'Watch 14 road clips, spot 15 developing hazards, and aim for 44/75.', icon: Eye, color: 'coral', meta: 'Part two' },
   { id: 'recall', name: 'Rapid recall', description: 'Race the clock. Retrieve before you reveal.', icon: Zap, color: 'amber', meta: 'Speed + memory' },
   { id: 'learn', name: 'Learn & reveal', description: 'Build familiarity, then rate your confidence.', icon: Layers3, color: 'blue', meta: 'Rote learning' },
   { id: 'cloze', name: 'Fill the blank', description: 'Type the missing term from its definition.', icon: Code2, color: 'violet', meta: 'Written recall' },
@@ -19,6 +22,7 @@ const modes = [
 ]
 
 const starterDeck = normalizeDeck(drivingTheoryDeck)
+const allDrivingQuestions = flattenDeck(starterDeck)
 
 function loadDecks() {
   try {
@@ -40,8 +44,8 @@ function Header({ onImport, onMenu }) {
       <button className="icon-button mobile-only" onClick={onMenu} aria-label="Open menu"><Menu size={20} /></button>
       <div className="brand"><Logo /><span>StudyPro</span></div>
       <div className="top-actions">
+        <span className="local-note"><CheckCircle2 size={15} /> No account required</span>
         <button className="button button-ghost hide-mobile" onClick={onImport}><Upload size={17} /> Import JSON</button>
-        <button className="avatar" aria-label="Profile">NB</button>
       </div>
     </header>
   )
@@ -71,7 +75,7 @@ function Sidebar({ open, onClose, active, setActive, onImport }) {
           <div className="tip-icon"><Sparkles size={17} /></div>
           <div><strong>Study smarter</strong><p>Short, varied sessions make memories easier to retrieve.</p></div>
         </div>
-        <button className="nav-item subtle"><Settings size={18} /> Settings</button>
+        <p className="privacy-note"><strong>Private by default</strong><br />Sets and progress stay in this browser.</p>
       </aside>
     </>
   )
@@ -160,8 +164,8 @@ function HomePage({ deck, topic, setTopic, onStart, stats, onImport }) {
         <StatCard icon={Clock3} label="Time studied" value={`${stats.minutes} min`} detail="Across all sessions" color="blue" />
       </section>
       <section className="section-heading"><div><span className="eyebrow">PRACTICE YOUR WAY</span><h2>Choose a study mode</h2></div><span className="resource-count">{items.length} {items.length === 1 ? 'prompt' : 'prompts'} ready</span></section>
-      <section className="mode-grid">{modes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!items.length || (mode.id === 'mock' && items.length < 50)} />)}</section>
-      {deck.attribution && <footer className="content-attribution"><strong>Independent practice resource.</strong> {deck.attribution} The live test questions are not published.</footer>}
+      <section className="mode-grid">{modes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!['theory', 'hazard'].includes(mode.id) && !items.length} />)}</section>
+      <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution && <>{deck.attribution} </>}The live DVSA question bank and hazard clips are not reproduced.</footer>
     </main>
   )
 }
@@ -196,7 +200,7 @@ function ProgressPage({ stats }) {
 
 function SessionHeader({ mode, current, total, elapsed, onExit }) {
   const currentMode = modes.find((item) => item.id === mode)
-  const shownSeconds = mode === 'mock' ? Math.max(0, 3420 - elapsed) : elapsed
+  const shownSeconds = elapsed
   return <header className="session-header"><button className="button button-ghost" onClick={onExit}><ArrowLeft size={18} /> Exit</button><div className="session-title"><span>{currentMode.name}</span><div className="session-progress"><i style={{ width: `${(current / total) * 100}%` }} /></div><small>{current} of {total}</small></div><div className="session-time"><Clock3 size={17} /> {Math.floor(shownSeconds / 60)}:{String(shownSeconds % 60).padStart(2, '0')}</div></header>
 }
 
@@ -234,7 +238,7 @@ function MatchBoard({ items, onFinish }) {
 
 function StudySession({ mode, items, onExit, onComplete }) {
   const [round, setRound] = useState(0)
-  const sessionItems = useMemo(() => mode === 'mock' ? shuffle(items).slice(0, 50) : shuffle(items), [items, mode, round])
+  const sessionItems = useMemo(() => shuffle(items), [items, round])
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [reveal, setReveal] = useState(false)
@@ -250,10 +254,6 @@ function StudySession({ mode, items, onExit, onComplete }) {
     const timer = setInterval(() => setElapsed((value) => value + 1), 1000)
     return () => clearInterval(timer)
   }, [finished])
-
-  useEffect(() => {
-    if (mode === 'mock' && elapsed >= 3420 && !finished) complete(score)
-  }, [elapsed, mode, finished]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function complete(finalScore, attempts = total) {
     setScore(finalScore); setFinished(true); onComplete({ score: finalScore, total: attempts, elapsed })
@@ -277,7 +277,7 @@ function StudySession({ mode, items, onExit, onComplete }) {
   }
 
   const quizOptions = useMemo(() => {
-    if (!['quiz', 'mock'].includes(mode) || !item) return []
+    if (mode !== 'quiz' || !item) return []
     const sameTopic = sessionItems.filter((candidate) => candidate.id !== item.id && candidate.topic === item.topic)
     const pool = sameTopic.length >= 3 ? sameTopic : sessionItems.filter((candidate) => candidate.id !== item.id)
     const others = shuffle(pool).slice(0, 3)
@@ -295,7 +295,7 @@ function StudySession({ mode, items, onExit, onComplete }) {
         {mode === 'learn' && <div className="study-card-wrap"><div className="study-card learn-card"><span className="prompt-kicker">LEARN THE CONNECTION</span><span className="topic-pill">{item.topic}</span><h1>{item.key}</h1><p className="large-definition">{item.definition}</p>{reveal && <div className="insight-box"><Lightbulb size={19} /><div><strong>Why it matters</strong><p>{item.explanation}</p>{item.example && <small>Example: {item.example}</small>}</div></div>}<button className="text-action" onClick={() => setReveal(!reveal)}>{reveal ? 'Hide context' : 'Show context'} <ChevronDown size={16} /></button></div><div className="rating-row"><span>Did this feel familiar?</span><div><button className="button button-secondary" onClick={() => next(false)}>Still learning</button><button className="button button-primary" onClick={() => next(true)}>Familiar <ArrowRight size={17} /></button></div></div></div>}
         {mode === 'cloze' && <div className="study-card-wrap"><div className="study-card written-card"><span className="prompt-kicker">{item.question ? 'WRITE THE ANSWER' : 'TYPE THE MISSING TERM'}</span><span className="topic-pill">{item.topic}</span><p className="cloze-definition">{item.question || <><span className="blank-word">?</span> {item.definition}</>}</p><label htmlFor="cloze-answer">Your answer</label><input id="cloze-answer" autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !feedback && answer && checkTyped()} placeholder="Type your answer…" disabled={Boolean(feedback)} />{feedback && <div className={`answer-feedback ${feedback}`}><div>{feedback === 'correct' ? <CheckCircle2 size={19} /> : <HelpCircle size={19} />}<strong>{feedback === 'correct' ? 'Exactly right' : `Answer: ${item.key}`}</strong></div>{feedback === 'incorrect' && <p>Your answer: {answer || '—'}</p>}</div>}</div><div className="rating-row end"><span>{feedback ? 'Review it, then continue.' : 'Press Enter to check.'}</span>{feedback ? <button className="button button-primary" onClick={() => { if (feedback === 'correct') { if (index + 1 >= sessionItems.length) complete(score) ; else { setIndex(index + 1); setAnswer(''); setFeedback(null) } } else next(false) }}>Continue <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={checkTyped} disabled={!answer.trim()}>Check answer</button>}</div></div>}
         {mode === 'reason' && <div className="study-card-wrap"><div className="study-card written-card"><span className="prompt-kicker">EXPLAIN IT IN YOUR OWN WORDS</span><span className="topic-pill">{item.topic}</span><h2>Why does <em>{item.key}</em> matter, and how does it work?</h2><textarea autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Build your explanation here…" disabled={reveal} />{reveal && <div className="model-answer"><span>COMPARE WITH THE SOURCE</span><p>{item.explanation}</p>{item.example && <small>Example: {item.example}</small>}</div>}</div><div className="rating-row end">{!reveal ? <><span>A few clear sentences is enough.</span><button className="button button-primary" onClick={() => setReveal(true)} disabled={answer.trim().length < 10}>Compare answer</button></> : <><span>Did your answer capture the core idea?</span><div><button className="button button-secondary" onClick={() => next(false)}>Not yet</button><button className="button button-primary" onClick={() => next(true)}>Yes, it did <Check size={17} /></button></div></>}</div></div>}
-        {['quiz', 'mock'].includes(mode) && <div className="quiz-wrap"><div className="study-prompt"><span className="prompt-kicker">{mode === 'mock' ? 'TIMED MOCK TEST' : 'CHOOSE THE BEST ANSWER'}</span><span className="topic-pill">{item.topic}</span><h2>{item.question || 'Which term matches this definition?'}</h2>{!item.question && <p>{item.definition}</p>}</div><div className="quiz-options">{quizOptions.map((option, optionIndex) => { const chosen = feedback?.id === option.id; const showCorrect = feedback && option.id === item.id; return <button key={option.id} className={`${chosen ? 'chosen' : ''} ${showCorrect ? 'correct' : ''} ${chosen && option.id !== item.id ? 'incorrect' : ''}`} onClick={() => !feedback && setFeedback(option)} disabled={Boolean(feedback)}><span>{String.fromCharCode(65 + optionIndex)}</span>{option.key}{showCorrect && <Check size={17} />}</button> })}</div>{feedback && <div className="quiz-next"><p>{feedback.id === item.id ? 'Correct.' : `The best answer is ${item.key}.`}</p><button className="button button-primary" onClick={() => next(feedback.id === item.id)}>Next question <ArrowRight size={17} /></button></div>}</div>}
+        {mode === 'quiz' && <div className="quiz-wrap"><div className="study-prompt"><span className="prompt-kicker">CHOOSE THE BEST ANSWER</span><span className="topic-pill">{item.topic}</span><h2>{item.question || 'Which term matches this definition?'}</h2>{!item.question && <p>{item.definition}</p>}</div><div className="quiz-options">{quizOptions.map((option, optionIndex) => { const chosen = feedback?.id === option.id; const showCorrect = feedback && option.id === item.id; return <button key={option.id} className={`${chosen ? 'chosen' : ''} ${showCorrect ? 'correct' : ''} ${chosen && option.id !== item.id ? 'incorrect' : ''}`} onClick={() => !feedback && setFeedback(option)} disabled={Boolean(feedback)}><span>{String.fromCharCode(65 + optionIndex)}</span>{option.key}{showCorrect && <Check size={17} />}</button> })}</div>{feedback && <div className="quiz-next"><p>{feedback.id === item.id ? 'Correct.' : `The best answer is ${item.key}.`}</p><button className="button button-primary" onClick={() => next(feedback.id === item.id)}>Next question <ArrowRight size={17} /></button></div>}</div>}
       </main>
     </div>
   )
@@ -342,6 +342,8 @@ export default function App() {
     })
   }
 
+  if (session === 'theory') return <ExamSession deck={starterDeck} allQuestions={allDrivingQuestions} onExit={() => setSession(null)} onComplete={completeSession} />
+  if (session === 'hazard') return <HazardSession onExit={() => setSession(null)} onComplete={completeSession} />
   if (session) return <StudySession mode={session} items={deckItems} onExit={() => setSession(null)} onComplete={completeSession} />
 
   return (

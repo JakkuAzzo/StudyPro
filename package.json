@@ -2,6 +2,9 @@
   "name": "studypro",
   "private": true,
   "version": "1.0.0",
+  "license": "MIT",
+  "repository": "github:JakkuAzzo/StudyPro",
+  "homepage": "https://jakkuazzo.github.io/StudyPro/",
   "type": "module",
   "scripts": {
     "dev": "vite",

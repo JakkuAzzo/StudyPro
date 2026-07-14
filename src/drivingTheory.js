@@ -1,9 +1,10 @@
-const q = (question, answer, explanation, source) => ({
+const q = (question, answer, explanation, source, media = {}) => ({
   key: answer,
   question,
   definition: `${answer}. ${explanation}`,
   explanation,
   source,
+  ...media,
 })
 
 const topic = (title, items) => ({ title, items })
@@ -14,7 +15,7 @@ export const drivingTheoryDeck = {
   id: 'uk-car-theory-gb-2026',
   title: 'UK Car Theory — Complete Topic Practice',
   subject: 'Driving theory · Great Britain',
-  description: '112 original questions across all 14 car-theory topics, updated against the Highway Code in July 2026.',
+  description: '120 original questions, including official sign images, across all 14 car-theory topics; reviewed against the Highway Code in July 2026.',
   attribution: 'Contains public sector information licensed under the Open Government Licence v3.0. Not affiliated with or endorsed by DVSA.',
   topics: [
     topic('Alertness', [
@@ -126,6 +127,14 @@ export const drivingTheoryDeck = {
       q('What must you do at a steady amber traffic light?', 'Stop unless already too close to stop safely', 'Amber follows green and precedes red.', 'Highway Code light signals'),
       q('What does a blue circular sign with a white arrow mean?', 'You must travel in the shown direction', 'Blue circles generally state a positive requirement.', 'Highway Code traffic signs'),
       q('What does a red ring around a speed number mean?', 'The maximum speed allowed', 'The signed limit is a legal maximum, not a target.', 'Highway Code rule 124 and traffic signs'),
+      q('What does this sign mean?', 'Give way', 'Slow down on approach and give way to traffic on the road you are joining.', 'Highway Code traffic signs', { image: './assets/signs/give-way.jpg', imageAlt: 'An inverted white triangle with a thick red border' }),
+      q('What hazard does this sign warn about?', 'Pedestrians in the road ahead', 'Be prepared to slow down and give people plenty of room.', 'Highway Code traffic signs', { image: './assets/signs/pedestrians.jpg', imageAlt: 'A red warning triangle containing a walking person' }),
+      q('What hazard does this sign warn about?', 'Accompanied horses or ponies', 'Slow down, pass wide and quietly, and be ready to stop.', 'Highway Code rules 214 and traffic signs', { image: './assets/signs/horses.jpg', imageAlt: 'A red warning triangle containing a horse' }),
+      q('What does this warning sign mean?', 'Uneven road', 'Reduce speed because the uneven surface could affect steering or stability.', 'Highway Code traffic signs', { image: './assets/signs/uneven-road.jpg', imageAlt: 'A red warning triangle containing two humps' }),
+      q('What does this sign mean?', 'Other danger', 'A plate normally explains the specific hazard; approach cautiously.', 'Highway Code traffic signs', { image: './assets/signs/other-danger.jpg', imageAlt: 'A red warning triangle containing an exclamation mark' }),
+      q('What does this sign mean?', 'No entry for vehicular traffic', 'Do not drive past this sign.', 'Highway Code traffic signs', { image: './assets/signs/no-entry.jpg', imageAlt: 'A solid red circle with a horizontal white bar' }),
+      q('What speed limit is shown?', '30 mph', 'The red circle makes the number a mandatory maximum speed.', 'Highway Code rule 124 and traffic signs', { image: './assets/signs/30-limit.jpg', imageAlt: 'The number 30 inside a red circle' }),
+      q('What does this sign mean for a car?', 'National speed limit applies', 'For a car this is normally 60 mph on a single carriageway and 70 mph on a dual carriageway.', 'Highway Code rule 124 and traffic signs', { image: './assets/signs/national-speed-limit.jpg', imageAlt: 'A white circle crossed by a single black diagonal stripe' }),
     ]),
     topic('Documents', [
       q('What is the minimum motor insurance needed to drive on public roads?', 'Third-party insurance', 'It covers injury or damage caused to other people and their property.', 'Highway Code annex 3'),

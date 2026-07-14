@@ -91,6 +91,10 @@ export function normalizeDeck(input) {
         explanation: text(item.explanation, text(item.reasoning, definition)),
         example: text(item.example),
         source: text(item.source),
+        image: text(item.image),
+        imageAlt: text(item.imageAlt, text(item.image_alt)),
+        imageAttribution: text(item.imageAttribution, text(item.image_attribution)),
+        distractors: Array.isArray(item.distractors) ? item.distractors.map((value) => text(value)).filter(Boolean) : [],
       }
     })
     if (!items.length) throw new Error(`Topic ${topicIndex + 1} has no study items.`)
