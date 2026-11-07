@@ -28,3 +28,25 @@ describe('study rooms', () => {
     expect(publicRoom(room).players.find(p => p.id === 'guest').score).toBe(5)
   })
 })
+
+it('lets only the host queue a missed quiz question again and reports missed topics', async () => {
+  const { retryMissed } = await import('./rooms.js')
+  const room = createRoom('host', 'Alex', [{ ...questions[0], topic: 'Signs' }])
+  joinRoom(room, 'guest', 'Sam')
+  startRound(room, 'host')
+  submitAnswer(room, 'guest', 1)
+  revealRound(room, 'host')
+  expect(publicRoom(room).missedTopics).toEqual([{ topic: 'Signs', missed: 2 }])
+  expect(() => retryMissed(room, 'guest')).toThrow()
+  retryMissed(room, 'host')
+  startRound(room, 'host')
+  expect(publicRoom(room).round.prompt).toBe('What is safe?')
+})
+
+it('reveals the explanation source only after the round', () => {
+  const room = createRoom('host', 'Alex', [{ ...questions[0], source: 'Highway Code rule 91' }])
+  startRound(room, 'host')
+  expect(publicRoom(room).round.source).toBeUndefined()
+  revealRound(room, 'host')
+  expect(publicRoom(room).round.source).toBe('Highway Code rule 91')
+})

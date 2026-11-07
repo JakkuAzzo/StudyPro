@@ -3,7 +3,7 @@ import { scoreClip } from '../src/hazardClips.js'
 const requireHost = (room, id) => { if (room.host !== id) throw new Error('Only the host can control the round.') }
 export function createRoom(host, name, rounds) {
   if (!Array.isArray(rounds) || !rounds.length) throw new Error('No activities available.')
-  const room = { host, players: [], rounds, index: -1, phase: 'lobby', responses: {} }
+  const room = { host, players: [], rounds, index: -1, phase: 'lobby', responses: {}, missedTopics: {}, retried: false }
   joinRoom(room, host, name)
   return room
 }
@@ -19,6 +19,7 @@ export function startRound(room, id) {
   if (!['lobby', 'reveal'].includes(room.phase)) throw new Error('Finish the current round first.')
   room.index++
   room.responses = {}
+  room.retried = false
   room.phase = room.index >= room.rounds.length ? 'finished' : 'playing'
 }
 export function submitAnswer(room, id, response) {
@@ -38,7 +39,14 @@ export function revealRound(room, id) {
     if (!Object.hasOwn(room.responses, player.id)) continue
     player.score += round.type === 'hazard' ? scoreClip(round.clip, room.responses[player.id]).score : Number(room.responses[player.id] === round.answer)
   }
+  if (round.type !== 'hazard' && round.topic) { const missed = room.players.filter(p => room.responses[p.id] !== round.answer).length; if (missed) room.missedTopics[round.topic] = (room.missedTopics[round.topic] || 0) + missed }
   room.phase = 'reveal'
+}
+export function retryMissed(room, id) {
+  requireHost(room, id)
+  const round = room.rounds[room.index]
+  if (room.phase !== 'reveal' || round?.type === 'hazard' || room.retried || !room.players.some(p => room.responses[p.id] !== round.answer)) throw new Error('No missed quiz question to retry.')
+  room.rounds.splice(room.index + 1, 0, round); room.retried = true
 }
 export function publicRoom(room) {
   const round = room.rounds[room.index]
@@ -46,7 +54,7 @@ export function publicRoom(room) {
   if (round) {
     shown = round.type === 'hazard'
       ? { type: 'hazard', clip: { id: round.clip.id, duration: round.clip.duration, src: round.clip.src, ...(room.phase === 'reveal' ? { hazards: round.clip.hazards, sourceUrl: round.clip.sourceUrl, author: round.clip.author, license: round.clip.license } : {}) } }
-      : { type: 'quiz', prompt: round.prompt, options: round.options, image: round.image, imageAlt: round.imageAlt, ...(room.phase === 'reveal' ? { answer: round.answer, explanation: round.explanation } : {}) }
+      : { type: 'quiz', topic: round.topic, prompt: round.prompt, options: round.options, image: round.image, imageAlt: round.imageAlt, ...(room.phase === 'reveal' ? { answer: round.answer, explanation: round.explanation, source: round.source } : {}) }
   }
-  return { host: room.host, phase: room.phase, index: room.index, total: room.rounds.length, players: room.players.map(p => ({ ...p, answered: Object.hasOwn(room.responses, p.id), ...(room.phase === 'reveal' && round?.type === 'hazard' && Object.hasOwn(room.responses, p.id) ? { clicks: room.responses[p.id], roundScore: scoreClip(round.clip, room.responses[p.id]).score } : {}) })), round: shown }
+  return { host: room.host, phase: room.phase, index: room.index, total: room.rounds.length, retried: room.retried, canRetry: room.phase === 'reveal' && round?.type !== 'hazard' && !room.retried && room.players.some(p => room.responses[p.id] !== round.answer), missedTopics: Object.entries(room.missedTopics).map(([topic, missed]) => ({ topic, missed })).sort((a, b) => b.missed - a.missed), players: room.players.map(p => ({ ...p, answered: Object.hasOwn(room.responses, p.id), ...(room.phase === 'reveal' && round?.type === 'hazard' && Object.hasOwn(room.responses, p.id) ? { clicks: room.responses[p.id], roundScore: scoreClip(round.clip, room.responses[p.id]).score } : {}) })), round: shown }
 }
