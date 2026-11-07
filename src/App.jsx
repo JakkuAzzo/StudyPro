@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowRight, BookOpen, Brain, Check, CheckCircle2, ChevronDown, Clock3,
   Code2, Download, Eye, FileJson, Flame, Gauge, Grid2X2, HelpCircle, Home, Import,
   Layers3, Lightbulb, Link2, Menu, MoreHorizontal, Play, Plus, RotateCcw, Search,
-  Sparkles, Target, TimerReset, Trophy, Upload, X, Zap,
+  Sparkles, Target, TimerReset, Trophy, Upload, Users, X, Zap,
 } from 'lucide-react'
 import { deckTemplate, flattenDeck, normalizeDeck, shuffle } from './data.js'
 import { drivingTheoryDeck } from './drivingTheory.js'
@@ -11,6 +11,7 @@ import { builtInCourseDecks } from './courseCatalog.js'
 import { filterAndSortCourses } from './courseFilters.js'
 import ExamSession from './ExamSession.jsx'
 import HazardSession from './HazardSession.jsx'
+import StudyParty from './StudyParty.jsx'
 
 const modes = [
   { id: 'theory', name: 'Multiple-choice test', description: 'A fresh 50-question test with 57 minutes, flagging, review, and a 43/50 pass mark.', icon: TimerReset, color: 'red', meta: 'Part one' },
@@ -63,6 +64,7 @@ function Sidebar({ open, onClose, active, setActive, onImport }) {
   const nav = [
     { id: 'home', label: 'Study home', icon: Home },
     { id: 'library', label: 'Browse courses', icon: BookOpen },
+    { id: 'party', label: 'Study Party', icon: Users },
     { id: 'progress', label: 'Progress', icon: Gauge },
   ]
   return (
@@ -83,7 +85,7 @@ function Sidebar({ open, onClose, active, setActive, onImport }) {
           <div className="tip-icon"><Sparkles size={17} /></div>
           <div><strong>Study smarter</strong><p>Short, varied sessions make memories easier to retrieve.</p></div>
         </div>
-        <p className="privacy-note"><strong>Private by default</strong><br />Sets and progress stay in this browser.</p>
+        <p className="privacy-note"><strong>Private by default</strong><br />Solo sets and progress stay in this browser.</p>
       </aside>
     </>
   )
@@ -388,6 +390,7 @@ export default function App() {
         {page === 'home' && <HomePage deck={deck} topic={topic} setTopic={setTopic} onStart={setSession} stats={computedStats} onImport={() => setImportOpen(true)} onBrowse={() => setPage('library')} />}
         {page === 'library' && <LibraryPage decks={decks} activeId={deck.id} onSelect={(id) => { setActiveId(id); setTopic('All topics'); setPage('home') }} onImport={() => setImportOpen(true)} />}
         {page === 'progress' && <ProgressPage stats={computedStats} />}
+        {page === 'party' && <StudyParty decks={builtInDecks} onExit={() => setPage('home')} />}
       </div>
       {importOpen && <ImportModal onClose={() => setImportOpen(false)} onImport={addDeck} />}
     </div>
