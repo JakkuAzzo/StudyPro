@@ -12,6 +12,8 @@ import { filterAndSortCourses } from './courseFilters.js'
 import ExamSession from './ExamSession.jsx'
 import HazardSession from './HazardSession.jsx'
 import StudyParty from './StudyParty.jsx'
+import { TodayReview, LearningProgress } from './LearningPanels.jsx'
+import { recordAttempt, reviewQueue, topicSummary, validateBackup, addMockResult } from './learning.js'
 
 const modes = [
   { id: 'theory', name: 'Multiple-choice test', description: 'A fresh 50-question test with 57 minutes, flagging, review, and a 43/50 pass mark.', icon: TimerReset, color: 'red', meta: 'Part one' },
@@ -154,7 +156,7 @@ function ModeCard({ mode, onStart, disabled }) {
   )
 }
 
-function HomePage({ deck, topic, setTopic, onStart, stats, onImport, onBrowse }) {
+function HomePage({ deck, topic, setTopic, onStart, stats, onImport, onBrowse, dueCount, newCount, onReview }) {
   const items = flattenDeck(deck, topic)
   const availableModes = modes.filter((mode) => deck.features.includes(mode.id) || (!['theory', 'hazard'].includes(mode.id) && deck.features.includes('generic')))
   return (
@@ -171,9 +173,10 @@ function HomePage({ deck, topic, setTopic, onStart, stats, onImport, onBrowse })
       </section>
       <section className="stats-grid" aria-label="Study summary">
         <StatCard icon={Flame} label="Study streak" value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`} detail="Keep the rhythm" color="orange" />
-        <StatCard icon={Target} label="Mastery" value={`${stats.mastery}%`} detail={`${stats.answers} ${stats.answers === 1 ? 'answer' : 'answers'} logged`} color="green" />
+        <StatCard icon={Target} label="Practice accuracy" value={stats.accuracy === null ? "—" : `${stats.accuracy}%`} detail={`${stats.tracked} recorded ${stats.tracked === 1 ? 'attempt' : 'attempts'} in this course`} color="green" />
         <StatCard icon={Clock3} label="Time studied" value={`${stats.minutes} min`} detail="Across all sessions" color="blue" />
       </section>
+      <TodayReview dueCount={dueCount} newCount={newCount} onStart={onReview} />
       <section className="section-heading"><div><span className="eyebrow">PRACTICE YOUR WAY</span><h2>Choose a study mode</h2></div><span className="resource-count">{items.length} {items.length === 1 ? 'prompt' : 'prompts'} ready</span></section>
       <section className="mode-grid">{availableModes.map((mode) => <ModeCard key={mode.id} mode={mode} onStart={onStart} disabled={!['theory', 'hazard'].includes(mode.id) && !items.length} />)}</section>
       <footer className="content-attribution"><strong>Open-source and account-free.</strong> Progress stays on this device. {deck.attribution} {deck.referenceUrl && <a href={deck.referenceUrl} target="_blank" rel="noreferrer">Open official specification</a>}</footer>
@@ -221,19 +224,6 @@ function LibraryPage({ decks, activeId, onSelect, onImport }) {
   )
 }
 
-function ProgressPage({ stats }) {
-  const mastery = Math.min(100, stats.mastery)
-  return (
-    <main className="page-content">
-      <section className="simple-heading"><div><span className="eyebrow">LEARNING SIGNALS</span><h1>Your progress</h1><p>A lightweight view of the work you’ve done in this browser.</p></div></section>
-      <section className="progress-panel">
-        <div className="mastery-ring" style={{ '--progress': `${mastery * 3.6}deg` }}><div><strong>{mastery}%</strong><span>mastery</span></div></div>
-        <div className="progress-copy"><span className="eyebrow">OVERALL MASTERY</span><h2>Consistency beats intensity.</h2><p>You’ve completed <strong>{stats.sessions}</strong> sessions and logged <strong>{stats.answers}</strong> answers. Keep using the harder written and reasoning modes to make recall more durable.</p><div className="progress-bars"><span><i style={{ width: `${Math.max(6, mastery)}%` }} />Knowledge strength</span><span><i style={{ width: `${Math.max(8, Math.min(100, stats.sessions * 12))}%` }} />Practice consistency</span></div></div>
-      </section>
-    </main>
-  )
-}
-
 function SessionHeader({ mode, current, total, elapsed, onExit }) {
   const currentMode = modes.find((item) => item.id === mode)
   const shownSeconds = elapsed
@@ -272,9 +262,9 @@ function MatchBoard({ items, onFinish }) {
   return <div className="match-wrap"><div className="study-prompt"><span className="prompt-kicker">MATCH EVERY PAIR</span><h2>Connect each term to its meaning.</h2><p>{matched.length} of {roundItems.length} matched</p></div><div className={`match-grid ${wrong ? 'shake' : ''}`}><div className="match-column">{terms.map((item) => <button key={item.id} className={`${term?.id === item.id ? 'selected' : ''} ${matched.includes(item.id) ? 'matched' : ''}`} onClick={() => setTerm(item)} disabled={matched.includes(item.id)}>{matched.includes(item.id) && <Check size={16} />}{item.key}</button>)}</div><div className="match-column definitions">{definitions.map((item) => <button key={item.id} className={`${definition?.id === item.id ? 'selected' : ''} ${matched.includes(item.id) ? 'matched' : ''}`} onClick={() => setDefinition(item)} disabled={matched.includes(item.id)}>{item.definition}</button>)}</div></div></div>
 }
 
-function StudySession({ mode, items, onExit, onComplete }) {
+function StudySession({ mode, items, optionItems = items, shuffleItems = true, onExit, onComplete, onAttempt, saved, onToggleSaved }) {
   const [round, setRound] = useState(0)
-  const sessionItems = useMemo(() => shuffle(items), [items, round])
+  const sessionItems = useMemo(() => shuffleItems ? shuffle(items) : items, [items, round, shuffleItems])
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [reveal, setReveal] = useState(false)
@@ -296,6 +286,7 @@ function StudySession({ mode, items, onExit, onComplete }) {
   }
 
   function next(wasCorrect) {
+    if (mode === 'quiz' || mode === 'cloze') onAttempt(item, wasCorrect)
     const nextScore = score + (wasCorrect ? 1 : 0)
     if (index + 1 >= sessionItems.length) complete(nextScore)
     else { setScore(nextScore); setIndex(index + 1); setReveal(false); setAnswer(''); setFeedback(null) }
@@ -309,16 +300,15 @@ function StudySession({ mode, items, onExit, onComplete }) {
     const clean = (value) => value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '')
     const correct = clean(answer) === clean(item.key)
     setFeedback(correct ? 'correct' : 'incorrect')
-    if (correct) setScore((value) => value + 1)
   }
 
   const quizOptions = useMemo(() => {
     if (mode !== 'quiz' || !item) return []
-    const sameTopic = sessionItems.filter((candidate) => candidate.id !== item.id && candidate.topic === item.topic)
-    const pool = sameTopic.length >= 3 ? sameTopic : sessionItems.filter((candidate) => candidate.id !== item.id)
+    const sameTopic = optionItems.filter((candidate) => candidate.id !== item.id && candidate.topic === item.topic)
+    const pool = sameTopic.length >= 3 ? sameTopic : optionItems.filter((candidate) => candidate.id !== item.id)
     const others = shuffle(pool).slice(0, 3)
     return shuffle([item, ...others])
-  }, [mode, item, sessionItems])
+  }, [mode, item, optionItems])
 
   if (finished) return <div className="session-shell"><SessionHeader mode={mode} current={total} total={total} elapsed={elapsed} onExit={onExit} /><Finished score={score} total={mode === 'match' ? Math.max(score, total) : total} elapsed={elapsed} onRestart={restart} onExit={onExit} /></div>
 
@@ -326,12 +316,13 @@ function StudySession({ mode, items, onExit, onComplete }) {
     <div className="session-shell">
       <SessionHeader mode={mode} current={mode === 'match' ? 1 : index + 1} total={mode === 'match' ? 1 : total} elapsed={elapsed} onExit={onExit} />
       <main className="session-main">
+        {mode !== 'match' && item && <button className="button button-ghost" aria-pressed={Boolean(saved[item.id])} onClick={() => onToggleSaved(item)}>{saved[item.id] ? 'Remove saved question' : 'Save question for later'}</button>}
         {mode === 'match' && <MatchBoard key={round} items={items} onFinish={(matched, attempts) => complete(matched, attempts)} />}
         {mode === 'recall' && <div className="study-card-wrap"><div className={`study-card flip-card ${reveal ? 'revealed' : ''}`}><span className="prompt-kicker">{item.question ? 'QUICK RECALL' : 'DEFINE THE TERM'}</span><span className="topic-pill">{item.topic}</span><h1>{item.question || item.key}</h1>{reveal ? <div className="revealed-answer"><span>ANSWER</span><p>{item.definition}</p>{item.source && <small>Source: {item.source}</small>}{item.example && <small>Example: {item.example}</small>}</div> : <button className="reveal-button" onClick={() => setReveal(true)}><Play size={17} /> Reveal answer</button>}</div>{reveal && <div className="rating-row"><span>How did recall feel?</span><div><button className="button button-secondary" onClick={() => next(false)}>Again</button><button className="button button-primary" onClick={() => next(true)}><Check size={17} /> Got it</button></div></div>}</div>}
         {mode === 'learn' && <div className="study-card-wrap"><div className="study-card learn-card"><span className="prompt-kicker">LEARN THE CONNECTION</span><span className="topic-pill">{item.topic}</span><h1>{item.key}</h1><p className="large-definition">{item.definition}</p>{reveal && <div className="insight-box"><Lightbulb size={19} /><div><strong>Why it matters</strong><p>{item.explanation}</p>{item.example && <small>Example: {item.example}</small>}</div></div>}<button className="text-action" onClick={() => setReveal(!reveal)}>{reveal ? 'Hide context' : 'Show context'} <ChevronDown size={16} /></button></div><div className="rating-row"><span>Did this feel familiar?</span><div><button className="button button-secondary" onClick={() => next(false)}>Still learning</button><button className="button button-primary" onClick={() => next(true)}>Familiar <ArrowRight size={17} /></button></div></div></div>}
-        {mode === 'cloze' && <div className="study-card-wrap"><div className="study-card written-card"><span className="prompt-kicker">{item.question ? 'WRITE THE ANSWER' : 'TYPE THE MISSING TERM'}</span><span className="topic-pill">{item.topic}</span><p className="cloze-definition">{item.question || <><span className="blank-word">?</span> {item.definition}</>}</p><label htmlFor="cloze-answer">Your answer</label><input id="cloze-answer" autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !feedback && answer && checkTyped()} placeholder="Type your answer…" disabled={Boolean(feedback)} />{feedback && <div className={`answer-feedback ${feedback}`}><div>{feedback === 'correct' ? <CheckCircle2 size={19} /> : <HelpCircle size={19} />}<strong>{feedback === 'correct' ? 'Exactly right' : `Answer: ${item.key}`}</strong></div>{feedback === 'incorrect' && <p>Your answer: {answer || '—'}</p>}</div>}</div><div className="rating-row end"><span>{feedback ? 'Review it, then continue.' : 'Press Enter to check.'}</span>{feedback ? <button className="button button-primary" onClick={() => { if (feedback === 'correct') { if (index + 1 >= sessionItems.length) complete(score) ; else { setIndex(index + 1); setAnswer(''); setFeedback(null) } } else next(false) }}>Continue <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={checkTyped} disabled={!answer.trim()}>Check answer</button>}</div></div>}
+        {mode === 'cloze' && <div className="study-card-wrap"><div className="study-card written-card"><span className="prompt-kicker">{item.question ? 'WRITE THE ANSWER' : 'TYPE THE MISSING TERM'}</span><span className="topic-pill">{item.topic}</span><p className="cloze-definition">{item.question || <><span className="blank-word">?</span> {item.definition}</>}</p><label htmlFor="cloze-answer">Your answer</label><input id="cloze-answer" autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !feedback && answer && checkTyped()} placeholder="Type your answer…" disabled={Boolean(feedback)} />{feedback && <div className={`answer-feedback ${feedback}`}><div>{feedback === 'correct' ? <CheckCircle2 size={19} /> : <HelpCircle size={19} />}<strong>{feedback === 'correct' ? 'Exactly right' : `Answer: ${item.key}`}</strong></div>{feedback === 'incorrect' && <p>Your answer: {answer || '—'}</p>}</div>}</div><div className="rating-row end"><span>{feedback ? 'Review it, then continue.' : 'Press Enter to check.'}</span>{feedback ? <button className="button button-primary" onClick={() => next(feedback === 'correct')}>Continue <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={checkTyped} disabled={!answer.trim()}>Check answer</button>}</div></div>}
         {mode === 'reason' && <div className="study-card-wrap"><div className="study-card written-card"><span className="prompt-kicker">EXPLAIN IT IN YOUR OWN WORDS</span><span className="topic-pill">{item.topic}</span><h2>Why does <em>{item.key}</em> matter, and how does it work?</h2><textarea autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Build your explanation here…" disabled={reveal} />{reveal && <div className="model-answer"><span>COMPARE WITH THE SOURCE</span><p>{item.explanation}</p>{item.example && <small>Example: {item.example}</small>}</div>}</div><div className="rating-row end">{!reveal ? <><span>A few clear sentences is enough.</span><button className="button button-primary" onClick={() => setReveal(true)} disabled={answer.trim().length < 10}>Compare answer</button></> : <><span>Did your answer capture the core idea?</span><div><button className="button button-secondary" onClick={() => next(false)}>Not yet</button><button className="button button-primary" onClick={() => next(true)}>Yes, it did <Check size={17} /></button></div></>}</div></div>}
-        {mode === 'quiz' && <div className="quiz-wrap"><div className="study-prompt"><span className="prompt-kicker">CHOOSE THE BEST ANSWER</span><span className="topic-pill">{item.topic}</span><h2>{item.question || 'Which term matches this definition?'}</h2>{!item.question && <p>{item.definition}</p>}</div><div className="quiz-options">{quizOptions.map((option, optionIndex) => { const chosen = feedback?.id === option.id; const showCorrect = feedback && option.id === item.id; return <button key={option.id} className={`${chosen ? 'chosen' : ''} ${showCorrect ? 'correct' : ''} ${chosen && option.id !== item.id ? 'incorrect' : ''}`} onClick={() => !feedback && setFeedback(option)} disabled={Boolean(feedback)}><span>{String.fromCharCode(65 + optionIndex)}</span>{option.key}{showCorrect && <Check size={17} />}</button> })}</div>{feedback && <div className="quiz-next"><p>{feedback.id === item.id ? 'Correct.' : `The best answer is ${item.key}.`}</p><button className="button button-primary" onClick={() => next(feedback.id === item.id)}>Next question <ArrowRight size={17} /></button></div>}</div>}
+        {mode === 'quiz' && <div className="quiz-wrap"><div className="study-prompt"><span className="prompt-kicker">CHOOSE THE BEST ANSWER</span><span className="topic-pill">{item.topic}</span><h2>{item.question || 'Which term matches this definition?'}</h2>{!item.question && <p>{item.definition}</p>}</div><div className="quiz-options">{quizOptions.map((option, optionIndex) => { const chosen = feedback?.id === option.id; const showCorrect = feedback && option.id === item.id; return <button key={option.id} className={`${chosen ? 'chosen' : ''} ${showCorrect ? 'correct' : ''} ${chosen && option.id !== item.id ? 'incorrect' : ''}`} onClick={() => !feedback && setFeedback(option)} disabled={Boolean(feedback)}><span>{String.fromCharCode(65 + optionIndex)}</span>{option.key}{showCorrect && <Check size={17} />}</button> })}</div>{feedback && <div className="quiz-next"><p>{feedback.id === item.id ? 'Correct.' : `The best answer is ${item.key}.`}</p><p>{item.explanation}</p>{item.source && <p><small>Source: {item.source} {item.source.toLowerCase().includes('highway code') && <a href="https://www.gov.uk/guidance/the-highway-code" target="_blank" rel="noreferrer">Open the Highway Code</a>}</small></p>}<button className="button button-primary" onClick={() => next(feedback.id === item.id)}>Next question <ArrowRight size={17} /></button></div>}</div>}
       </main>
     </div>
   )
@@ -347,7 +338,11 @@ export default function App() {
     }
     return localStorage.getItem('studypro:active') || starterDeck.id
   })
-  const [page, setPage] = useState('home')
+  const [history, setHistory] = useState(() => { try { return JSON.parse(localStorage.getItem('studypro:history')) || {} } catch { return {} } })
+  const [mocks, setMocks] = useState(() => { try { const value = JSON.parse(localStorage.getItem('studypro:mocks')); return Array.isArray(value) ? value : [] } catch { return [] } })
+  const [saved, setSaved] = useState(() => { try { return JSON.parse(localStorage.getItem('studypro:saved')) || {} } catch { return {} } })
+  const [reviewItems, setReviewItems] = useState([])
+  const [page, setPage] = useState(() => new URLSearchParams(window.location.search).has('party') ? 'party' : 'home')
   const [topic, setTopic] = useState('All topics')
   const [importOpen, setImportOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -357,12 +352,25 @@ export default function App() {
     catch { return { sessions: 0, answers: 0, correct: 0, seconds: 0, streak: 0, lastStudy: null } }
   })
   const deck = decks.find((item) => item.id === activeId) || decks[0]
-  const deckItems = flattenDeck(deck, topic)
-  const computedStats = { ...stats, mastery: stats.answers ? Math.round((stats.correct / stats.answers) * 100) : 0, minutes: Math.round(stats.seconds / 60) }
+  const deckItems = useMemo(() => flattenDeck(deck, topic), [deck, topic])
+  const courseItems = useMemo(() => flattenDeck(deck), [deck])
+  const dueItems = reviewQueue(courseItems, history, deck.id, saved)
+  const unseenItems = courseItems.filter(item => !history[deck.id]?.[item.id] && !dueItems.some(due => due.id === item.id))
+  const summaries = topicSummary(history, deck.id)
+  const tracked = summaries.reduce((n, item) => n + item.total, 0), trackedCorrect = summaries.reduce((n, item) => n + item.correct, 0)
+  const computedStats = { ...stats, tracked, accuracy: tracked ? Math.round(trackedCorrect / tracked * 100) : null, minutes: Math.round(stats.seconds / 60) }
 
   useEffect(() => { localStorage.setItem('studypro:decks', JSON.stringify(decks.filter((item) => !builtInIds.has(item.id)))) }, [decks])
   useEffect(() => { localStorage.setItem('studypro:active', deck.id) }, [deck.id])
   useEffect(() => { localStorage.setItem('studypro:stats', JSON.stringify(stats)) }, [stats])
+  useEffect(() => { localStorage.setItem('studypro:history', JSON.stringify(history)) }, [history])
+  useEffect(() => { localStorage.setItem('studypro:saved', JSON.stringify(saved)) }, [saved])
+  useEffect(() => { localStorage.setItem('studypro:mocks', JSON.stringify(mocks)) }, [mocks])
+  function attempt(item, correct) { setHistory(current => recordAttempt(current, deck.id, item, correct)) }
+  function toggleSaved(item) { setSaved(current => ({ ...current, [deck.id]: { ...current[deck.id], [item.id]: !current[deck.id]?.[item.id] } })) }
+  function startReview() { setReviewItems([...dueItems, ...unseenItems].slice(0, 10)); setSession('review') }
+  function exportBackup() { const blob = new Blob([JSON.stringify({ version: 1, decks: decks.filter(item => !builtInIds.has(item.id)), stats, history, saved, mocks, activeId: deck.id }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'studypro-backup.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
+  async function restoreBackup(input) { const backup = validateBackup(input); if (!window.confirm('Replace this browser’s StudyPro progress and imported sets with this backup?')) throw new Error('Restore cancelled; nothing was changed.'); setDecks([...builtInDecks, ...backup.decks.filter(item => !builtInIds.has(item.id))]); setStats({ sessions: 0, answers: 0, correct: 0, seconds: 0, streak: 0, lastStudy: null, ...backup.stats }); setHistory(backup.history); setSaved(backup.saved); setMocks(backup.mocks || []); setActiveId(typeof backup.activeId === 'string' ? backup.activeId : starterDeck.id); setTopic('All topics') }
 
   function addDeck(newDeck) {
     const unique = { ...newDeck, id: `${newDeck.id}-${Date.now()}` }
@@ -378,19 +386,19 @@ export default function App() {
     })
   }
 
-  if (session === 'theory') return <ExamSession deck={starterDeck} allQuestions={allDrivingQuestions} onExit={() => setSession(null)} onComplete={completeSession} />
+  if (session === 'theory') return <ExamSession deck={starterDeck} allQuestions={allDrivingQuestions} onExit={() => setSession(null)} onComplete={result => { setHistory(current => result.attempts.reduce((h, a) => recordAttempt(h, starterDeck.id, a.item, a.correct), current)); setMocks(current => addMockResult(current, result)); completeSession(result) }} />
   if (session === 'hazard') return <HazardSession onExit={() => setSession(null)} onComplete={completeSession} />
-  if (session) return <StudySession mode={session} items={deckItems} onExit={() => setSession(null)} onComplete={completeSession} />
+  if (session) return <StudySession mode={session === 'review' ? 'quiz' : session} items={session === 'review' ? reviewItems : deckItems} optionItems={courseItems} shuffleItems={session !== 'review'} onExit={() => setSession(null)} onComplete={completeSession} onAttempt={attempt} saved={saved[deck.id] || {}} onToggleSaved={toggleSaved} />
 
   return (
     <div className="app-shell">
       <Header onImport={() => setImportOpen(true)} onMenu={() => setMenuOpen(true)} />
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={page} setActive={setPage} onImport={() => { setImportOpen(true); setMenuOpen(false) }} />
       <div className="content-shell">
-        {page === 'home' && <HomePage deck={deck} topic={topic} setTopic={setTopic} onStart={setSession} stats={computedStats} onImport={() => setImportOpen(true)} onBrowse={() => setPage('library')} />}
+        {page === 'home' && <HomePage deck={deck} topic={topic} setTopic={setTopic} onStart={setSession} stats={computedStats} onImport={() => setImportOpen(true)} onBrowse={() => setPage('library')} dueCount={dueItems.length} newCount={unseenItems.length} onReview={startReview} />}
         {page === 'library' && <LibraryPage decks={decks} activeId={deck.id} onSelect={(id) => { setActiveId(id); setTopic('All topics'); setPage('home') }} onImport={() => setImportOpen(true)} />}
-        {page === 'progress' && <ProgressPage stats={computedStats} />}
-        {page === 'party' && <StudyParty decks={builtInDecks} onExit={() => setPage('home')} />}
+        {page === 'progress' && <LearningProgress deck={deck} history={history} stats={stats} mocks={mocks} onExport={exportBackup} onRestore={restoreBackup} />}
+        {page === 'party' && <StudyParty decks={builtInDecks} onExit={() => { const url = new URL(window.location.href); url.searchParams.delete('party'); window.history.replaceState(null, '', url); setPage('home') }} />}
       </div>
       {importOpen && <ImportModal onClose={() => setImportOpen(false)} onImport={addDeck} />}
     </div>

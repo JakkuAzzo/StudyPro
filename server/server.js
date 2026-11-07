@@ -7,14 +7,14 @@ import { builtInCourseDecks } from '../src/courseCatalog.js'
 import { normalizeDeck, flattenDeck } from '../src/data.js'
 import { hazardClips } from '../src/hazardClips.js'
 import { getExamOptions } from '../src/examData.js'
-import { createRoom, joinRoom, startRound, submitAnswer, revealRound, publicRoom } from './rooms.js'
+import { createRoom, joinRoom, startRound, submitAnswer, revealRound, retryMissed, publicRoom } from './rooms.js'
 
 const decks = [drivingTheoryDeck, ...builtInCourseDecks].map(normalizeDeck)
 const shuffle = items => { const out = [...items]; for (let i = out.length - 1; i > 0; i--) { const j = randomInt(i + 1); [out[i], out[j]] = [out[j], out[i]] } return out }
 export function buildQuizRound(item, items, seed) {
   const options = getExamOptions(item, items, seed).map(option => option.key)
   if (options.length < 4) return null
-  return { prompt: item.question || item.definition, options, answer: options.indexOf(item.key), explanation: item.explanation, image: item.image, imageAlt: item.imageAlt }
+  return { topic: item.topic, prompt: item.question || item.definition, options, answer: options.indexOf(item.key), explanation: item.explanation, source: item.source, image: item.image, imageAlt: item.imageAlt }
 }
 function makeRounds(deckId, mode) {
   const deck = decks.find(x => x.id === deckId)
@@ -69,9 +69,11 @@ export async function startServer({ port = Number(process.env.PORT || 8787), all
           send(ws, { type: 'joined', code: entry.code, playerId, token, room: publicRoom(entry.room) }); broadcast(entry)
         } else {
           if (!entry) throw new Error('Join a room first.')
+          if (data.action === 'ping') { send(ws, { type: 'pong' }); return }
           if (data.action === 'next') startRound(entry.room, playerId)
           else if (data.action === 'answer') submitAnswer(entry.room, playerId, data.response)
           else if (data.action === 'reveal') revealRound(entry.room, playerId)
+          else if (data.action === 'retry') retryMissed(entry.room, playerId)
           else throw new Error('Unknown action.')
           broadcast(entry)
         }

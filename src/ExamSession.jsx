@@ -27,7 +27,7 @@ export default function ExamSession({ deck, allQuestions, onExit, onComplete }) 
     if (reported.current) return
     const score = questions.filter((item) => answers[item.id] === item.id).length
     reported.current = true; setConfirming(false); setFinished(true)
-    onComplete({ score, total: 50, elapsed: Math.min(elapsed, THEORY_SECONDS) })
+    onComplete({ score, total: 50, elapsed: Math.min(elapsed, THEORY_SECONDS), attempts: questions.map(item => ({ item, correct: answers[item.id] === item.id })) })
   }
   useEffect(() => { if (finished) return; const timer = setInterval(() => setElapsed((value) => value + 1), 1000); return () => clearInterval(timer) }, [finished])
   useEffect(() => { if (!remaining && !finished) submit() }, [remaining, finished]) // eslint-disable-line react-hooks/exhaustive-deps

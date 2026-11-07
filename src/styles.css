@@ -214,3 +214,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .party-note { color: #5d6477; font-size: .9rem; }
 .party-error { background: #fff1ef; color: #9d2c26; border-radius: 9px; padding: 12px; }
 @media (max-width: 650px) { .party-grid, .party-options { grid-template-columns: 1fr; } .party-panel { padding: 19px; } .party-header { gap: 10px; } }
+.revision-panel { margin: 22px 0; padding: 24px; background: #fff; border: 1px solid #e3e7e6; border-radius: 16px; }
+.revision-panel h2 { margin: 5px 0 10px; }
+.revision-panel p { line-height: 1.55; }
+.revision-panel small { display: block; margin-top: 12px; color: #566a62; }
+.topic-list { list-style: none; margin: 0; padding: 0; }
+.topic-list li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid #e2e9e5; }
+.backup-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.hazard-replay { margin: 18px 0; max-width: 720px; }
+.hazard-replay video { width: 100%; max-height: 360px; background: #111; border-radius: 10px; }
+.hazard-timeline { position: relative; height: 18px; margin: 20px 8px 12px; background: #dce6e1; border-radius: 9px; }
+.hazard-window { position: absolute; height: 100%; background: #52aa78; border-radius: 5px; }
+.hazard-marker { position: absolute; top: -5px; height: 28px; width: 4px; background: #9c3535; border-radius: 2px; }
+.hazard-replay p, .hazard-replay li { line-height: 1.5; }
