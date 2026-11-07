@@ -10,14 +10,16 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run --pool=threads"
+    "test": "vitest run --pool=threads",
+    "party:server": "node server/server.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "vite": "latest",
+    "ws": "^8.22.1"
   },
   "devDependencies": {
     "vitest": "latest"

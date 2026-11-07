@@ -36,7 +36,7 @@ Use **Browse courses** to search course names and topic titles, filter by course
 
 ## Privacy and accessibility
 
-There are no accounts, logins, profiles, analytics, adverts, API keys, or backend services. Imported sets and progress stay in `localStorage` on the current device. Clearing the site's browser data removes them.
+Solo study requires no accounts, logins, profiles, analytics, adverts, API keys, or backend services. Imported sets and solo progress stay in `localStorage` on the current device. Clearing the site's browser data removes them.
 
 The interface uses semantic form controls, visible keyboard focus, text labels for icon controls, responsive layouts, and reduced-motion support. Accessibility reports are welcome.
 
@@ -114,3 +114,19 @@ JSX is compiled by Vite during the build; GitHub Pages receives ordinary HTML, C
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code or content. Security reports are covered by [SECURITY.md](SECURITY.md). Code is released under the [MIT License](LICENSE); content retains its stated licence.
 
 See the [course roadmap](docs/ROADMAP.md) for the next content-depth milestones.
+
+## Study Party (self-hosted room service)
+
+Study Party lets friends use a room code for a shared built-in-course quiz or a set of three driving hazard clips. The host starts rounds and reveals results. Everyone plays each video on their own device; hazard taps are scored against that player's media playback position, not the network arrival time. The clip review shows taps and points. These are practice annotations, not official DVSA scoring. Friends can reconnect to an active room on the same browser tab after a temporary connection loss.
+
+The static website cannot host multiplayer by itself. For local development, in separate terminals run:
+
+```sh
+npm install
+npm run party:server
+npm run dev
+```
+
+The development app connects to `ws://localhost:8787`. The room service must be separately hosted at a publicly reachable secure WebSocket address for remote friends. Configure `VITE_PARTY_SERVER_URL=wss://your-service.example` **when building** the website and configure `ALLOWED_ORIGINS` on the room service to a comma-separated list of the exact permitted website origins (for example `https://jakkuazzo.github.io`). The server listens on `PORT` or 8787 and responds to `/health`. An unconfigured production build shows that the service is unavailable instead of pretending rooms work.
+
+Rooms are held in server memory and expire after two hours of inactivity or when the service restarts. Room codes are access credentials: share them only with the people you want to join. Display names, answers, and scores pass through the room service and are shared with players in that room. The solo modes continue to store their data locally. Imported courses are not sent to the room service; the first version uses built-in courses only. Scores are for friendly practice and are not tamper-proof. Do not deploy this sample service publicly without reviewing capacity limits, operational monitoring and abuse protections.
